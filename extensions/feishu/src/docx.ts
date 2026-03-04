@@ -101,10 +101,23 @@ const MAX_BLOCKS_PER_INSERT = 50;
 const MAX_CONVERT_RETRY_DEPTH = 8;
 
 async function convertMarkdown(client: Lark.Client, markdown: string) {
-  const res = await client.docx.document.convert({
-    data: { content_type: "markdown", content: markdown },
-  });
+  let res;
+  try {
+    res = await client.docx.document.convert({
+      data: { content_type: "markdown", content: markdown },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- diagnostic logging
+    const responseData = (err as any)?.response?.data;
+    console.error(
+      `[feishu_doc] document.convert FAILED: ${detail}`,
+      responseData ? JSON.stringify(responseData) : "",
+    );
+    throw err;
+  }
   if (res.code !== 0) {
+    console.error(`[feishu_doc] document.convert error: code=${res.code} msg=${res.msg}`);
     throw new Error(res.msg);
   }
   return {
@@ -143,14 +156,28 @@ async function insertBlocks(
   // inserts (each appended to the end) produce deterministic results.
   const allInserted: any[] = [];
   for (const [offset, block] of cleaned.entries()) {
-    const res = await client.docx.documentBlockChildren.create({
-      path: { document_id: docToken, block_id: blockId },
-      data: {
-        children: [block],
-        ...(index !== undefined ? { index: index + offset } : {}),
-      },
-    });
+    let res;
+    try {
+      res = await client.docx.documentBlockChildren.create({
+        path: { document_id: docToken, block_id: blockId },
+        data: {
+          children: [block],
+          ...(index !== undefined ? { index: index + offset } : {}),
+        },
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      const responseData = (err as any)?.response?.data;
+      console.error(
+        `[feishu_doc] documentBlockChildren.create FAILED (doc=${docToken}, block=${blockId}, offset=${offset}): ${detail}`,
+        responseData ? JSON.stringify(responseData) : "",
+      );
+      throw err;
+    }
     if (res.code !== 0) {
+      console.error(
+        `[feishu_doc] documentBlockChildren.create error: code=${res.code} msg=${res.msg} (doc=${docToken}, block=${blockId})`,
+      );
       throw new Error(res.msg);
     }
     allInserted.push(...(res.data?.children ?? []));
@@ -315,12 +342,27 @@ async function insertBlocksWithDescendant(
     return { children: [] };
   }
 
-  const res = await client.docx.documentBlockDescendant.create({
-    path: { document_id: docToken, block_id: parentBlockId },
-    data: { children_id: firstLevelBlockIds, descendants, index },
-  });
+  let res;
+  try {
+    res = await client.docx.documentBlockDescendant.create({
+      path: { document_id: docToken, block_id: parentBlockId },
+      data: { children_id: firstLevelBlockIds, descendants, index },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- diagnostic logging
+    const responseData = (err as any)?.response?.data;
+    console.error(
+      `[feishu_doc] documentBlockDescendant.create FAILED (doc=${docToken}, parent=${parentBlockId}, children_id=${JSON.stringify(firstLevelBlockIds)}, descendants_count=${descendants.length}): ${detail}`,
+      responseData ? JSON.stringify(responseData) : "",
+    );
+    throw err;
+  }
 
   if (res.code !== 0) {
+    console.error(
+      `[feishu_doc] documentBlockDescendant.create error: code=${res.code} msg=${res.msg} (doc=${docToken})`,
+    );
     throw new Error(`${res.msg} (code: ${res.code})`);
   }
 
@@ -341,11 +383,26 @@ async function clearDocumentContent(client: Lark.Client, docToken: string) {
       .map((b) => b.block_id) ?? [];
 
   if (childIds.length > 0) {
-    const res = await client.docx.documentBlockChildren.batchDelete({
-      path: { document_id: docToken, block_id: docToken },
-      data: { start_index: 0, end_index: childIds.length },
-    });
+    let res;
+    try {
+      res = await client.docx.documentBlockChildren.batchDelete({
+        path: { document_id: docToken, block_id: docToken },
+        data: { start_index: 0, end_index: childIds.length },
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- diagnostic logging
+      const responseData = (err as any)?.response?.data;
+      console.error(
+        `[feishu_doc] batchDelete FAILED (doc=${docToken}, childIds=${childIds.length}): ${detail}`,
+        responseData ? JSON.stringify(responseData) : "",
+      );
+      throw err;
+    }
     if (res.code !== 0) {
+      console.error(
+        `[feishu_doc] batchDelete error: code=${res.code} msg=${res.msg} (doc=${docToken})`,
+      );
       throw new Error(res.msg);
     }
   }

@@ -75,16 +75,31 @@ async function insertBatch(
     return [];
   }
 
-  const res = await client.docx.documentBlockDescendant.create({
-    path: { document_id: docToken, block_id: parentBlockId },
-    data: {
-      children_id: firstLevelBlockIds,
-      descendants,
-      index,
-    },
-  });
+  let res;
+  try {
+    res = await client.docx.documentBlockDescendant.create({
+      path: { document_id: docToken, block_id: parentBlockId },
+      data: {
+        children_id: firstLevelBlockIds,
+        descendants,
+        index,
+      },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- diagnostic logging
+    const responseData = (err as any)?.response?.data;
+    console.error(
+      `[feishu_doc] insertBatch descendant.create FAILED (doc=${docToken}, parent=${parentBlockId}, children_id=${JSON.stringify(firstLevelBlockIds)}, descendants_count=${descendants.length}): ${detail}`,
+      responseData ? JSON.stringify(responseData) : "",
+    );
+    throw err;
+  }
 
   if (res.code !== 0) {
+    console.error(
+      `[feishu_doc] insertBatch descendant.create error: code=${res.code} msg=${res.msg} (doc=${docToken})`,
+    );
     throw new Error(`${res.msg} (code: ${res.code})`);
   }
 
