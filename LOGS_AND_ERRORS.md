@@ -8,10 +8,10 @@
 
 ### 文件位置
 
-| 文件 | 说明 |
-|------|------|
+| 文件                                                             | 说明                                               |
+| ---------------------------------------------------------------- | -------------------------------------------------- |
 | `/home/wellingwong/.openclaw/agents/main/sessions/sessions.json` | 会话索引，记录所有 session key → session ID 的映射 |
-| `/home/wellingwong/.openclaw/agents/main/sessions/<id>.jsonl` | 每个会话的完整对话记录，每行一个 JSON 对象 |
+| `/home/wellingwong/.openclaw/agents/main/sessions/<id>.jsonl`    | 每个会话的完整对话记录，每行一个 JSON 对象         |
 
 ### JSONL 字段结构
 
@@ -52,12 +52,14 @@ agent 内置 `session-logs` skill，会自动解析 JSONL 文件。
 以下命令在本地终端运行（无需 SSH 进服务器）。
 
 **查看会话列表：**
+
 ```bash
 gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap \
   --command="docker exec openclaw-openclaw-gateway-1 node dist/index.js sessions"
 ```
 
 **今日总消耗：**
+
 ```bash
 gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap \
   --command="sudo jq -s '[.[] | .message.usage.cost.total // 0] | {total_usd: add, messages: length}' \
@@ -65,6 +67,7 @@ gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-throug
 ```
 
 **按会话列出消耗：**
+
 ```bash
 gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap --command="
 for f in /home/wellingwong/.openclaw/agents/main/sessions/*.jsonl; do
@@ -76,6 +79,7 @@ done | sort -r
 ```
 
 **提取某个会话的全部对话文本：**
+
 ```bash
 gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap \
   --command="sudo jq -r 'select(.message.role==\"user\" or .message.role==\"assistant\") |
@@ -99,6 +103,7 @@ gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-throug
 ```
 
 只看报错行：
+
 ```bash
 gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap \
   --command="docker logs openclaw-openclaw-gateway-1 --tail=100 2>&1 | grep -i 'error\|failed\|drop\|blocked'"
@@ -106,29 +111,38 @@ gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-throug
 
 常见报错关键词：
 
-| 关键词 | 含义 |
-|--------|------|
-| `handler failed` | 消息处理失败（权限、网络、模型错误） |
-| `gateway error` | Discord WebSocket 连接问题 |
-| `drop message` | 消息被过滤掉（mention 未满足、DM 策略等） |
-| `Blocked discord` | Discord 访问控制拦截 |
-| `authentication_error` | API key 错误或打到了错误的 endpoint |
-| `EACCES` | 文件权限问题 |
+| 关键词                 | 含义                                      |
+| ---------------------- | ----------------------------------------- |
+| `handler failed`       | 消息处理失败（权限、网络、模型错误）      |
+| `gateway error`        | Discord WebSocket 连接问题                |
+| `drop message`         | 消息被过滤掉（mention 未满足、DM 策略等） |
+| `Blocked discord`      | Discord 访问控制拦截                      |
+| `authentication_error` | API key 错误或打到了错误的 endpoint       |
+| `EACCES`               | 文件权限问题                              |
 
 ### 2. Gateway 日志文件（更完整的历史）
 
 适合：排查几小时前发生的问题。
 
-日志文件在容器内 `/tmp/openclaw/openclaw-YYYY-MM-DD.log`（JSON 格式）。
+日志文件格式为 `openclaw-YYYY-MM-DD.log`（JSON 格式），已通过 bind mount 持久化到宿主机：
+
+| 位置             | 路径                                               |
+| ---------------- | -------------------------------------------------- |
+| 宿主机（持久化） | `~/.openclaw/runtime-logs/openclaw-YYYY-MM-DD.log` |
+| 容器内           | `/tmp/openclaw/openclaw-YYYY-MM-DD.log`            |
 
 ```bash
-# 查今天的报错
-gcloud compute ssh openclaw-gateway-huiling --zone=us-central1-a --tunnel-through-iap \
+# 查今天的报错（直接读宿主机文件，容器重启也不丢）
+gcloud compute ssh <gateway-host> --zone=us-central1-a --tunnel-through-iap \
+  --command="sudo grep -i 'error\|failed' ~/.openclaw/runtime-logs/openclaw-\$(date +%Y-%m-%d).log | tail -20"
+```
+
+```bash
+# 或通过容器 exec 读取
+gcloud compute ssh <gateway-host> --zone=us-central1-a --tunnel-through-iap \
   --command="docker exec openclaw-openclaw-gateway-1 \
   grep -i 'error\|failed' /tmp/openclaw/openclaw-\$(date +%Y-%m-%d).log | tail -20"
 ```
-
-> 注意：容器重启后 `/tmp/` 会清空，日志不持久化。
 
 ### 3. Session JSONL 里的报错（最精准）
 
