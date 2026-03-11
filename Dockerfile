@@ -24,7 +24,7 @@ RUN chown node:node /app
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN set -eu; \
-    APT_PACKAGES="gh"; \
+    APT_PACKAGES="ca-certificates curl ffmpeg gh golang-go jq python3-pip ripgrep"; \
     if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
       APT_PACKAGES="$APT_PACKAGES $OPENCLAW_DOCKER_APT_PACKAGES"; \
     fi; \
@@ -32,6 +32,34 @@ RUN set -eu; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $APT_PACKAGES && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+ARG OPENCLAW_GO_VERSION="1.24.1"
+RUN set -eu; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64) go_arch="amd64" ;; \
+      arm64) go_arch="arm64" ;; \
+      *) echo "Unsupported architecture for Go: $arch" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://go.dev/dl/go${OPENCLAW_GO_VERSION}.linux-${go_arch}.tar.gz" | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+RUN npm i -g clawhub mcporter @google/gemini-cli
+
+RUN pip3 install --break-system-packages nano-pdf
+
+ARG OPENCLAW_GIFGREP_VERSION="0.2.1"
+RUN set -eu; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64) gifgrep_arch="amd64" ;; \
+      arm64) gifgrep_arch="arm64" ;; \
+      *) echo "Unsupported architecture for gifgrep: $arch" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/steipete/gifgrep/releases/download/v${OPENCLAW_GIFGREP_VERSION}/gifgrep_${OPENCLAW_GIFGREP_VERSION}_linux_${gifgrep_arch}.tar.gz" \
+      | tar -xz -C /usr/local/bin gifgrep
+
+RUN GOBIN=/usr/local/bin go install github.com/Hyaxia/blogwatcher/cmd/blogwatcher@latest
 
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY --chown=node:node ui/package.json ./ui/package.json
@@ -102,7 +130,7 @@ RUN for dir in /app/extensions /app/.agent /app/.agents; do \
         find "$dir" -type f -exec chmod 644 {} +; \
       fi; \
     done
-RUN pnpm build
+RUN NODE_OPTIONS=--max-old-space-size=1536 pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build

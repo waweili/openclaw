@@ -27,20 +27,20 @@
 
 ### `openai`
 
-| 字段     | 值                            |
-| -------- | ----------------------------- |
-| Base URL | `https://newapi.infist.cn/v1` |
-| API 格式 | OpenAI-compat（默认）         |
-| API Key  | 环境变量 `OPENAI_API_KEY`     |
+| 字段     | 值                                  |
+| -------- | ----------------------------------- |
+| Base URL | `http://api.infinite-status.com`    |
+| API 格式 | `openai-responses`（Responses API） |
+| Auth     | `token`                             |
+| API Key  | 与 `claude-sub2api` 相同            |
 
 **UI 模型列表**：
 
-| 模型 ID                  | 名称                   | 用途                                       |
-| ------------------------ | ---------------------- | ------------------------------------------ |
-| `gpt-4.1`                | GPT-4.1                | 对话 / 任务                                |
-| `text-embedding-3-small` | Text Embedding 3 Small | 向量嵌入（memory search 专用，非对话模型） |
+| 模型 ID     | 名称      | 用途                        |
+| ----------- | --------- | --------------------------- |
+| `codex-5.2` | Codex 5.2 | **当前 agent 默认主模型** ← |
 
-> `text-embedding-3-small` 用于启用 OpenClaw 长期记忆功能，配置见下文。
+> **注意**：原 `gpt-4.1` 和 `text-embedding-3-small`（memory search 嵌入）已从此 provider 移除。如需恢复嵌入功能，需单独添加 provider。
 
 ---
 
@@ -70,7 +70,7 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "claude-sub2api/claude-sonnet-4-6"
+        "primary": "openai/codex-5.2"
       }
     }
   }
@@ -111,6 +111,8 @@
 ```
 
 ### 启用长期记忆（可选）
+
+> ⚠️ **当前不可用**：`openai` provider 已切换为 `codex-5.2`（Responses API），`text-embedding-3-small` 已移除。如需恢复长期记忆，须单独添加一个支持嵌入模型的 provider（如重新挂一个指向 `newapi.infist.cn` 的 provider，key 为非 `openai` 的名称），再将 `memorySearch.model` 指向它。
 
 ```json
 {
