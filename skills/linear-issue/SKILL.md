@@ -4,13 +4,7 @@ description: Read a Linear issue by URL or identifier and summarize its details 
 user-invocable: true
 homepage: https://linear.app
 metadata:
-  {
-    "openclaw":
-      {
-        "requires": { "env": ["LINEAR_API_KEY"], "bins": ["curl"] },
-        "primaryEnv": "LINEAR_API_KEY",
-      },
-  }
+  { "openclaw": { "requires": { "env": ["LINEAR_API_KEY"] }, "primaryEnv": "LINEAR_API_KEY" } }
 ---
 
 # linear-issue
