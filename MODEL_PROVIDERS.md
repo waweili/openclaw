@@ -44,6 +44,22 @@
 
 ---
 
+### `embed`
+
+| 字段     | 值                            |
+| -------- | ----------------------------- |
+| Base URL | `https://newapi.infist.cn/v1` |
+| API 格式 | OpenAI-compat（默认）         |
+| API Key  | 环境变量 `OPENAI_API_KEY`     |
+
+**用途**：专用嵌入 provider，供 `memorySearch` 使用。
+
+| 模型 ID                  | 名称                   | 用途                      |
+| ------------------------ | ---------------------- | ------------------------- |
+| `text-embedding-3-small` | Text Embedding 3 Small | 向量嵌入（memory search） |
+
+---
+
 ### `gemini`
 
 | 字段     | 值                            |
@@ -56,6 +72,7 @@
 
 | 模型 ID                             | 名称                      | 输入        |
 | ----------------------------------- | ------------------------- | ----------- |
+| `gemini-3.1-pro-preview`            | Gemini 3.1 Pro Preview    | 文本 + 图像 |
 | `gemini-3-pro-preview`              | Gemini 3 Pro Preview      | 文本 + 图像 |
 | `gemini-2.5-flash-lite`             | Gemini 2.5 Flash Lite     | 文本 + 图像 |
 | `deep-research-pro-preview-12-2025` | Deep Research Pro Preview | 文本        |
@@ -70,7 +87,7 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai/codex-5.2"
+        "primary": "google/gemini-3.1-pro-preview"
       }
     }
   }
@@ -110,16 +127,16 @@
 }
 ```
 
-### 启用长期记忆（可选）
+### 启用长期记忆
 
-> ⚠️ **当前不可用**：`openai` provider 已切换为 `codex-5.2`（Responses API），`text-embedding-3-small` 已移除。如需恢复长期记忆，须单独添加一个支持嵌入模型的 provider（如重新挂一个指向 `newapi.infist.cn` 的 provider，key 为非 `openai` 的名称），再将 `memorySearch.model` 指向它。
+嵌入模型独立配置在 `embed` provider 下（`newapi.infist.cn`，key 为 `${OPENAI_API_KEY}`）：
 
 ```json
 {
   "agents": {
     "defaults": {
       "memorySearch": {
-        "model": "openai/text-embedding-3-small"
+        "model": "embed/text-embedding-3-small"
       }
     }
   }

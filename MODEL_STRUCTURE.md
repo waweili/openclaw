@@ -33,10 +33,10 @@
 
 ## 主对话模型
 
-| 角色     | 模型                    | Provider         | 用途                 |
-| -------- | ----------------------- | ---------------- | -------------------- |
-| Primary  | `claude-sonnet-4-6`     | `claude-sub2api` | 默认主对话模型       |
-| Fallback | `gemini-2.5-flash-lite` | `gemini`         | 主模型失败时自动降级 |
+| 角色     | 模型                     | Provider | 用途                 |
+| -------- | ------------------------ | -------- | -------------------- |
+| Primary  | `gemini-3.1-pro-preview` | `google` | 默认主对话模型       |
+| Fallback | `gpt-5.2`                | `openai` | 主模型失败时自动降级 |
 
 **配置字段**：`agents.defaults.model`
 
@@ -88,11 +88,12 @@
 
 ### `google`（Google 原生 API，直连）
 
-| 模型 ID            | 名称             | 输入        |
-| ------------------ | ---------------- | ----------- |
-| `gemini-2.5-flash` | Gemini 2.5 Flash | 文本 + 图像 |
-| `gemini-2.5-pro`   | Gemini 2.5 Pro   | 文本 + 图像 |
-| `gemini-2.0-flash` | Gemini 2.0 Flash | 文本 + 图像 |
+| 模型 ID                  | 名称                   | 输入        |
+| ------------------------ | ---------------------- | ----------- |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro Preview | 文本 + 图像 |
+| `gemini-2.5-flash`       | Gemini 2.5 Flash       | 文本 + 图像 |
+| `gemini-2.5-pro`         | Gemini 2.5 Pro         | 文本 + 图像 |
+| `gemini-2.0-flash`       | Gemini 2.0 Flash       | 文本 + 图像 |
 
 ### `openai`（via newapi.infist.cn，OpenAI-compat）
 
